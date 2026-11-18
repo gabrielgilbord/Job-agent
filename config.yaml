@@ -30,7 +30,7 @@ busqueda:
   puntuacion_alerta_inmediata: 90      # aviso instantáneo
   dias_sin_ver_para_cerrar: 3          # ejecuciones seguidas sin verla => cerrada
   admitir_remoto: true                 # solo remoto auténtico y compatible
-  panel_url: ""                        # dirección del panel web (se enlaza en los correos)
+  panel_url: "https://empleo-gran-canaria.vercel.app"                        # dirección del panel web (se enlaza en los correos)
 
 preferencias:
   jornada: "completa"                  # completa | parcial | indiferente
