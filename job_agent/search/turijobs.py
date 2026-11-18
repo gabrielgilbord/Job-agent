@@ -10,7 +10,11 @@ import re
 
 from ..models import Offer
 from ..textutil import html_to_text
-from .base import Source, BROWSER_UA, make_session
+import time
+
+import httpx
+
+from .base import Source, UA
 
 BASE = "https://www.turijobs.com"
 LIST_URL = BASE + "/es/ofertas-trabajo/gran-canaria"
@@ -21,12 +25,25 @@ class TurijobsSource(Source):
     delay = 2.0
 
     def __init__(self, settings, session=None):
-        super().__init__(settings, session or make_session(BROWSER_UA))
+        super().__init__(settings, session)
+        # Turijobs responde bien por HTTP/2 y se queda colgado por HTTP/1.1 desde algunos servidores (p. ej. GitHub)
+        self.client = httpx.Client(http2=True, timeout=45, follow_redirects=True,
+                                   headers={"User-Agent": UA, "Accept-Language": "es-ES,es;q=0.9"})
 
     def _page(self, n: int) -> dict:
         url = LIST_URL if n == 1 else f"{LIST_URL}?page={n}"
-        r = self.session.get(url, timeout=30)
-        r.raise_for_status()
+        for attempt in range(3):
+            try:
+                r = self.client.get(url)
+                if r.status_code in (429, 500, 502, 503, 504) and attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                r.raise_for_status()
+                break
+            except httpx.TransportError:
+                if attempt == 2:
+                    raise
+                time.sleep(5 * (attempt + 1))
         m = re.search(r'id="__NEXT_DATA__"[^>]*>(.*?)</script>', r.text, re.S)
         if not m:
             raise RuntimeError("Turijobs: estructura de página no reconocida")
