@@ -1,4 +1,3 @@
 requests>=2.31
 PyYAML>=6.0
-flask>=3.0        # solo para el panel local (python main.py dashboard)
 pytest>=8.0       # pruebas

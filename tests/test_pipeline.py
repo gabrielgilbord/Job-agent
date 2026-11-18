@@ -43,8 +43,8 @@ def test_busqueda_e_informe_con_fuente_caida(settings):
 
 
 def test_no_repite_ofertas_al_dia_siguiente(settings):
-    run(settings, notify=False, sources=[FakeOK], now=datetime(2026, 11, 18, 8, 30, tzinfo=TZ))
-    res = run(settings, notify=False, sources=[FakeOK], now=datetime(2026, 11, 19, 8, 30, tzinfo=TZ))
+    run(settings, notify=True, sources=[FakeOK], now=datetime(2026, 11, 18, 8, 30, tzinfo=TZ))
+    res = run(settings, notify=True, sources=[FakeOK], now=datetime(2026, 11, 19, 8, 30, tzinfo=TZ))
     assert res.events["new"] == 0
     assert "Sin novedades relevantes" in open(res.report_path, encoding="utf-8").read()
 
@@ -55,7 +55,7 @@ def test_programacion_hora_canaria(settings):
     assert should_run_scheduled(settings, db, datetime(2026, 1, 15, 8, 30, tzinfo=TZ))[0]
     assert should_run_scheduled(settings, db, datetime(2026, 7, 15, 8, 30, tzinfo=TZ))[0]       # verano
     db.close()
-    run(settings, notify=False, sources=[FakeOK], now=datetime(2026, 7, 15, 8, 30, tzinfo=TZ))
+    run(settings, notify=True, sources=[FakeOK], now=datetime(2026, 7, 15, 8, 30, tzinfo=TZ))
     db = Database(settings.db_path)
     assert not should_run_scheduled(settings, db, datetime(2026, 7, 15, 9, 30, tzinfo=TZ))[0]   # ya enviado hoy
 
@@ -70,8 +70,8 @@ def test_notificaciones(settings, monkeypatch):
         def send_report(self, subject, html, text, path):
             sent.append(("report", subject))
 
-        def send_alert(self, text):
-            sent.append(("alert", text))
+        def send_alert(self, subject, html, text):
+            sent.append(("alert", subject))
 
     class BrokenChan(FakeChan):
         name = "broken"
@@ -93,10 +93,22 @@ def test_sin_canales_configurados_no_rompe(settings):
     assert notifications.send_report(settings, "x", "<p>x</p>", "x", "x") == []
 
 
-def test_panel_de_control(settings):
-    from job_agent.dashboard.app import create_app
+def test_panel_web_datos_y_marcas(settings):
+    import json
     run(settings, notify=False, sources=[FakeOK], now=datetime(2026, 11, 18, 8, 30, tzinfo=TZ))
-    c = create_app(settings).test_client()
-    assert c.get("/").status_code == 200
-    assert c.post("/flag/1", data={"f": "favorite"}).status_code == 302
-    assert b'class="fav"' in c.get("/?fav=1").data
+    data = json.loads((settings.site_dir / "data.json").read_text(encoding="utf-8"))
+    assert len(data["offers"]) == 2 and data["last_run"]
+    assert "Comercio Internacional" not in json.dumps(data, ensure_ascii=False)  # no publica el perfil de la candidata
+    oid = data["offers"][0]["id"]
+    (settings.site_dir / "flags.json").write_text(json.dumps({"favorite": [oid], "discarded": []}))
+    run(settings, mode="alerts", notify=False, sources=[FakeOK], now=datetime(2026, 11, 18, 12, 0, tzinfo=TZ))
+    data = json.loads((settings.site_dir / "data.json").read_text(encoding="utf-8"))
+    db = Database(settings.db_path)
+    assert db.query("favorite=1")[0]["id"] == oid
+
+
+def test_vista_previa_no_cuenta_como_informe(settings):
+    run(settings, notify=False, sources=[FakeOK], now=datetime(2026, 11, 18, 8, 30, tzinfo=TZ))
+    db = Database(settings.db_path)
+    assert not db.daily_report_done("2026-11-18")
+    assert db.to_report(0)   # siguen pendientes para el correo real

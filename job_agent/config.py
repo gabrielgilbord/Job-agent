@@ -29,6 +29,7 @@ class Settings:
     db_path: Path
     reports_dir: Path
     logs_dir: Path
+    site_dir: Path
     secrets: dict = field(default_factory=dict)
 
     # accesos cómodos
@@ -62,7 +63,6 @@ class Settings:
 
 
 SECRET_NAMES = [
-    "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID",
     "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "EMAIL_TO", "EMAIL_FROM",
     "ADZUNA_APP_ID", "ADZUNA_APP_KEY",
     "INFOJOBS_CLIENT_ID", "INFOJOBS_CLIENT_SECRET",
@@ -79,6 +79,7 @@ def load_settings(config_path: str | Path | None = None, db_path: str | Path | N
         raw=raw,
         db_path=Path(db_path or os.environ.get("JOB_AGENT_DB", ROOT / "data" / "jobs.db")),
         reports_dir=ROOT / "reports_out",
+        site_dir=ROOT / "site",
         logs_dir=ROOT / "logs",
         secrets=secrets,
     )

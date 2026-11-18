@@ -1,7 +1,6 @@
 """Correo electrónico por SMTP (p. ej. Gmail con «contraseña de aplicación»)."""
 from __future__ import annotations
 
-import re
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -39,8 +38,8 @@ class EmailNotifier:
                 s.login(self.user, self.password)
                 s.send_message(msg)
 
-    def send_report(self, subject, html, short_text, html_path):
-        self._send(subject, html, re.sub(r"<[^>]+>", "", short_text))
+    def send_report(self, subject, html, text, html_path):
+        self._send(subject, html, text)
 
-    def send_alert(self, text):
-        self._send("🔥 Oferta de empleo excelente", None, re.sub(r"<[^>]+>", "", text))
+    def send_alert(self, subject, html, text):
+        self._send(subject, html, text)

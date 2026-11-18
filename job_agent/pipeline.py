@@ -9,7 +9,8 @@ from datetime import datetime
 from . import notifications
 from .config import Settings
 from .database import Database
-from .reports.report import ReportData, render_html, render_telegram, render_alert, local_now
+from .reports.report import ReportData, render_html, render_text, render_alert, local_now
+from .webpanel import apply_flags, export_data
 from .scoring.scorer import score_offer, enrich_location
 from .search import ALL_SOURCES
 from .search.base import SourceUnavailable
@@ -125,7 +126,11 @@ def run(settings: Settings, mode: str = "daily", notify: bool = True, scheduled:
                 res.skipped_reason = why
                 log.info("Ejecución programada omitida: %s", why)
                 return res
-        run_id = db.start_run(mode, now.date().isoformat())
+        apply_flags(settings, db)
+        panel_url = settings.busqueda.get("panel_url") or ""
+        # "daily" sin enviar correo = vista previa: no cuenta como informe del día ni marca ofertas como comunicadas
+        run_mode = mode if (mode != "daily" or notify) else "preview"
+        run_id = db.start_run(run_mode, now.date().isoformat())
         offers, ok_sources = collect(settings, db, run_id, res, sources)
         res.found = len(offers)
         relevant = process(settings, offers)
@@ -144,7 +149,8 @@ def run(settings: Settings, mode: str = "daily", notify: bool = True, scheduled:
         thr = int(settings.busqueda.get("puntuacion_alerta_inmediata", 90))
         alerts = db.pending_alerts(thr)
         if alerts and notify:
-            errs = notifications.send_alert(settings, render_alert(alerts))
+            html_a, text_a = render_alert(alerts, panel_url)
+            errs = notifications.send_alert(settings, f"🔥 Oferta de empleo excelente: {alerts[0]['title']}", html_a, text_a)
             res.errors.extend(errs)
             if not errs:
                 db.mark_alerted([a["id"] for a in alerts])
@@ -156,7 +162,7 @@ def run(settings: Settings, mode: str = "daily", notify: bool = True, scheduled:
                 date=now, pending=pending, new_total=db.count_new_since_last_report(),
                 companies=db.companies_to_follow(), followed=settings.raw.get("empresas_a_seguir", []),
                 errors=res.errors, sources_summary=res.sources, closed_today=res.closed)
-            html = render_html(data)
+            html = render_html(data, panel_url)
             settings.reports_dir.mkdir(parents=True, exist_ok=True)
             path = settings.reports_dir / f"informe_{now:%Y-%m-%d}.html"
             path.write_text(html, encoding="utf-8")
@@ -166,15 +172,16 @@ def run(settings: Settings, mode: str = "daily", notify: bool = True, scheduled:
             if notify:
                 subject = (f"Empleo GC {now:%d/%m}: {len(data.rows)} ofertas interesantes"
                            if data.rows else f"Empleo GC {now:%d/%m}: sin novedades relevantes")
-                send_errors = notifications.send_report(settings, subject, html, render_telegram(data), path)
+                send_errors = notifications.send_report(settings, subject, html, render_text(data, panel_url), path)
                 res.errors.extend(send_errors)
-            if not send_errors:
+            if notify and not send_errors:
                 # todo lo pendiente (también lo < mínimo) pasa a "comunicada" para no repetirlo mañana
                 ids = [r["id"] for r in db.conn.execute(
                     "SELECT id FROM offers WHERE status IN ('nueva','modificada','republicada')").fetchall()]
                 db.mark_reported(ids)
         all_failed = not ok_sources
         db.finish_run(run_id, res.found, res.relevant, res.events["new"], res.errors, ok=not all_failed)
+        export_data(settings, db)
         log.info("Fin: %d encontradas, %d relevantes, eventos=%s, cerradas=%d, errores=%d",
                  res.found, res.relevant, res.events, res.closed, len(res.errors))
         return res

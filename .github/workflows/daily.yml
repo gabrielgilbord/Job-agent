@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       modo:
-        description: "run = búsqueda + informe ahora · alerts = solo alertas > 90"
+        description: "run = búsqueda + informe por correo ahora · manual = búsqueda sin informe (actualiza el panel)"
         default: run
         type: choice
-        options: [run, alerts]
+        options: [run, manual]
 
 permissions:
   contents: write
@@ -39,8 +39,6 @@ jobs:
 
       - name: Ejecutar agente
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
@@ -53,20 +51,22 @@ jobs:
           INFOJOBS_CLIENT_SECRET: ${{ secrets.INFOJOBS_CLIENT_SECRET }}
           JOOBLE_API_KEY: ${{ secrets.JOOBLE_API_KEY }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            python main.py ${{ inputs.modo }}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.modo }}" = "run" ]; then
+            python main.py run
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python main.py alerts
           elif [ "${{ github.event.schedule }}" = "30 14 * * *" ]; then
             python main.py alerts
           else
             python main.py run --scheduled
           fi
 
-      - name: Guardar historial (base de datos e informes)
+      - name: Guardar historial (base de datos, informes y datos del panel)
         if: always()
         run: |
           git config user.name "job-agent-bot"
           git config user.email "job-agent-bot@users.noreply.github.com"
-          git add data/ reports_out/ logs/ || true
+          git add data/ reports_out/ logs/ site/data.json || true
           if ! git diff --cached --quiet; then
             git commit -m "Actualización automática $(TZ=Atlantic/Canary date '+%Y-%m-%d %H:%M')"
             git pull --rebase -X ours || true

@@ -12,12 +12,13 @@ from job_agent.models import Offer  # noqa: E402
 
 @pytest.fixture
 def settings(tmp_path, monkeypatch):
-    for k in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "SMTP_HOST", "ADZUNA_APP_ID", "INFOJOBS_CLIENT_ID", "JOOBLE_API_KEY"):
+    for k in ("SMTP_HOST", "SMTP_USER", "ADZUNA_APP_ID", "INFOJOBS_CLIENT_ID", "JOOBLE_API_KEY"):
         monkeypatch.delenv(k, raising=False)
     s = load_settings(db_path=tmp_path / "t.db")
     s.secrets = {k: "" for k in s.secrets}
     s.reports_dir = tmp_path / "reports"
     s.logs_dir = tmp_path / "logs"
+    s.site_dir = tmp_path / "site"
     return s
 
 

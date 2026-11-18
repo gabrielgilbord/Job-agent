@@ -144,7 +144,7 @@ def card(r, full=True) -> str:
 <a class="btn" href="{escape(r["url"])}">Inscribirse / ver oferta →</a></div>"""
 
 
-def render_html(d: ReportData) -> str:
+def render_html(d: ReportData, panel_url: str = "") -> str:
     p = []
     p.append(f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe de empleo — {d.date:%d/%m/%Y}</title>
@@ -153,7 +153,9 @@ def render_html(d: ReportData) -> str:
 <p>Fecha de búsqueda: {fecha_es(d.date)}, {d.date:%H:%M} (hora canaria)</p>
 <div class="stats"><div class="stat"><b>{d.new_total}</b>ofertas nuevas encontradas</div>
 <div class="stat"><b>{d.interesting}</b>ofertas interesantes</div>
-<div class="stat"><b>{len(d.top)}</b>destacadas</div></div></div>""")
+<div class="stat"><b>{len(d.top)}</b>destacadas</div></div>
+{f'<a class="btn" style="background:#fff;color:#1f4e5f !important" href="{escape(panel_url)}">Abrir panel de ofertas</a>' if panel_url else ''}
+</div>""")
 
     if not d.rows:
         p.append('<h2>Sin novedades relevantes</h2><div class="card">Hoy se ha realizado la búsqueda en todas las fuentes '
@@ -222,38 +224,39 @@ def render_html(d: ReportData) -> str:
     return "\n".join(p)
 
 
-def render_telegram(d: ReportData) -> str:
-    """Resumen corto en HTML de Telegram (límite 4096 caracteres)."""
-    e = escape
-    lines = [f"<b>📋 Informe de empleo — {d.date:%d/%m/%Y}</b>",
-             f"Nuevas: <b>{d.new_total}</b> · Interesantes: <b>{d.interesting}</b>", ""]
+def render_text(d: ReportData, panel_url: str = "") -> str:
+    """Versión en texto plano del correo (para clientes que no muestran HTML)."""
+    lines = [f"INFORME DIARIO DE EMPLEO — GRAN CANARIA ({d.date:%d/%m/%Y})",
+             f"Nuevas: {d.new_total} · Interesantes: {d.interesting}", ""]
     if not d.rows:
-        lines.append("Búsqueda hecha ✅. Hoy no hay ofertas nuevas que merezcan la pena.")
-        return "\n".join(lines)
-    lines.append("<b>🏆 Top</b>")
+        lines.append("Búsqueda realizada. Hoy no hay ofertas nuevas que merezcan la pena.")
     for i, r in enumerate(d.top, 1):
-        chg = f" <i>({r['status']}: {e(r.get('change_note') or '')})</i>" if r["status"] != "nueva" else ""
-        lines.append(f"{i}. <a href=\"{e(r['url'])}\">{e(r['title'])}</a> — {e(r.get('company') or '¿?')}\n"
-                     f"   📍 {e(_place(r))} · <b>{r['score']}/100</b> ({label(r['score'])}){chg}\n"
-                     f"   💶 {_salary(r)} · {e(r.get('contract') or 'contrato ¿?')} · {e(r.get('workday') or 'jornada ¿?')}")
+        lines += [f"{i}. {r['title']} — {r.get('company') or '¿?'} ({r['score']}/100, {label(r['score'])})",
+                  f"   {_place(r)} · {r.get('salary_text') or 'salario no publicado'} · {r.get('contract') or '¿contrato?'}",
+                  f"   {r['url']}"]
     if d.others:
-        lines += ["", "<b>Otras interesantes</b>"]
-        lines += [f"• <a href=\"{e(r['url'])}\">{e(r['title'])}</a> ({r['score']})" for r in d.others[:8]]
-    if d.urgent:
-        lines += ["", "⏰ <b>Urgentes:</b> " + ", ".join(e(r["title"]) for r in d.urgent[:4])]
-    lines += ["", "El informe completo va adjunto 👇"]
-    txt = "\n".join(lines)
-    return txt[:4000]
+        lines += ["", "Otras interesantes:"] + [f"- {r['title']} ({r['score']}) {r['url']}" for r in d.others]
+    if panel_url:
+        lines += ["", f"Panel: {panel_url}"]
+    return "\n".join(lines)
 
 
-def render_alert(rows) -> str:
-    e = escape
-    out = ["🔥 <b>¡Oferta excelente detectada!</b>"]
+def render_alert(rows, panel_url: str = "") -> tuple[str, str]:
+    """(html, texto) del aviso inmediato de ofertas excelentes."""
+    rows = [dict(r) for r in rows]
     for r in rows:
-        r = dict(r)
-        out.append(f"\n<a href=\"{e(r['url'])}\">{e(r['title'])}</a> — {e(r.get('company') or '')}\n"
-                   f"📍 {e(_place(r))} · <b>{r['score']}/100</b>\n{e(r.get('verdict') or '')}")
-    return "\n".join(out)[:4000]
+        for k in ("reasons", "warnings"):
+            if isinstance(r.get(k), str):
+                try:
+                    r[k] = json.loads(r[k])
+                except ValueError:
+                    r[k] = []
+    html = (f'<!doctype html><html><head><meta charset="utf-8"><style>{CSS}</style></head><body><div class="wrap">'
+            f'<div class="hero"><h1>🔥 Oferta excelente detectada</h1><p>No esperes al informe de mañana.</p></div>'
+            + "".join(card(r) for r in rows)
+            + (f'<p><a href="{escape(panel_url)}">Abrir el panel</a></p>' if panel_url else "") + "</div></body></html>")
+    text = "\n\n".join(f"{r['title']} — {r.get('company') or ''} ({r['score']}/100)\n{_place(r)}\n{r['url']}" for r in rows)
+    return html, text
 
 
 def local_now(tz: str = "Atlantic/Canary") -> datetime:
