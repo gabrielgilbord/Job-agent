@@ -1,4 +1,4 @@
-"""Generación del informe diario (HTML visual + resumen de texto para Telegram)."""
+"""Generación del informe diario (HTML visual + versión en texto del correo)."""
 from __future__ import annotations
 
 import json
