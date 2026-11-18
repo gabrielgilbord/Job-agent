@@ -64,7 +64,7 @@ ver las ofertas** (la página no se indexa en buscadores y no muestra datos pers
 - Proyecto de Vercel conectado a este repositorio con **Root Directory = `site`**.
 - Variables de entorno del proyecto en Vercel:
   - `PANEL_PIN`: el PIN para marcar ofertas o lanzar búsquedas.
-  - `GITHUB_REPO`: `usuario/job-agent-gc`.
+  - `GITHUB_REPO`: `gabrielgilbord/job-agent`.
   - `GITHUB_TOKEN`: token de GitHub *fine-grained* (github.com/settings/personal-access-tokens/new) con acceso
     **solo a este repositorio** y permisos **Contents: Read and write** y **Actions: Read and write**.
 - Pon la dirección del panel en `panel_url` de `config.yaml` para que salga enlazada en los correos.
