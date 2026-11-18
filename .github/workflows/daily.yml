@@ -1,0 +1,83 @@
+name: Búsqueda diaria de empleo
+
+on:
+  schedule:
+    # GitHub solo admite horas UTC. Canarias es UTC+0 en invierno y UTC+1 en verano,
+    # así que se lanzan dos disparadores y el programa solo ejecuta el que cae a las 08:30 en Canarias.
+    - cron: "30 7 * * *"    # 08:30 hora canaria en verano
+    - cron: "30 8 * * *"    # 08:30 hora canaria en invierno
+    - cron: "30 14 * * *"   # revisión de tarde: solo avisa si aparece una oferta > 90
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "run = búsqueda + informe ahora · alerts = solo alertas > 90"
+        default: run
+        type: choice
+        options: [run, alerts]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: job-agent
+  cancel-in-progress: false
+
+jobs:
+  buscar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar agente
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          INFOJOBS_CLIENT_ID: ${{ secrets.INFOJOBS_CLIENT_ID }}
+          INFOJOBS_CLIENT_SECRET: ${{ secrets.INFOJOBS_CLIENT_SECRET }}
+          JOOBLE_API_KEY: ${{ secrets.JOOBLE_API_KEY }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python main.py ${{ inputs.modo }}
+          elif [ "${{ github.event.schedule }}" = "30 14 * * *" ]; then
+            python main.py alerts
+          else
+            python main.py run --scheduled
+          fi
+
+      - name: Guardar historial (base de datos e informes)
+        if: always()
+        run: |
+          git config user.name "job-agent-bot"
+          git config user.email "job-agent-bot@users.noreply.github.com"
+          git add data/ reports_out/ logs/ || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualización automática $(TZ=Atlantic/Canary date '+%Y-%m-%d %H:%M')"
+            git pull --rebase -X ours || true
+            git push
+          fi
+
+  tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -r requirements.txt && pytest -q

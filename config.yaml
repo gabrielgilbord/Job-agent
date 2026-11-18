@@ -1,0 +1,99 @@
+# =====================================================================
+#  CONFIGURACIÓN DEL AGENTE DE EMPLEO — GRAN CANARIA
+#  Edita este archivo para cambiar preferencias. No pongas aquí claves
+#  ni contraseñas: esas van en variables de entorno / secretos de GitHub.
+# =====================================================================
+
+candidata:
+  nombre: "Candidata"                  # solo se usa en el saludo del informe
+  localidad_referencia: "Vega de San Mateo"
+  formacion:
+    - "Ciclo formativo de Comercio Internacional"
+    - "Grado en Turismo (finalizado)"
+  experiencia:
+    - "Dependienta en tienda de artesanía (actual)"
+    - "Atención al cliente, ventas y trato directo con el público"
+  # Datos NO confirmados: déjalos vacíos/null hasta confirmarlos.
+  # Si una oferta exige algo de aquí que no esté confirmado, se avisa
+  # como "requisito a confirmar" y se penaliza ligeramente.
+  idiomas_confirmados: []              # ej.: ["inglés B2", "alemán A2"]
+  carnet_conducir: null                # true / false / null (desconocido)
+  vehiculo_propio: null                # true / false / null
+
+busqueda:
+  hora_local: "08:30"                  # hora de Canarias (Atlantic/Canary)
+  zona_horaria: "Atlantic/Canary"
+  idioma_informe: "es"
+  tiempo_desplazamiento_ideal_min: 30
+  tiempo_desplazamiento_max_min: 60    # por encima solo si la oferta es muy buena
+  puntuacion_minima_informe: 60        # < 60 no aparece en el informe principal
+  puntuacion_alerta_inmediata: 90      # aviso instantáneo
+  dias_sin_ver_para_cerrar: 3          # ejecuciones seguidas sin verla => cerrada
+  admitir_remoto: true                 # solo remoto auténtico y compatible
+
+preferencias:
+  jornada: "completa"                  # completa | parcial | indiferente
+  contrato: "indefinido"               # indefinido | temporal | indiferente
+  salario_minimo_anual_bruto: null     # ej.: 18000  (null = no penalizar por salario)
+  aceptar_hosteleria_operativa: false  # camarera, cocina, limpieza... (false = descartar)
+  aceptar_practicas_no_remuneradas: false
+
+# Niveles geográficos (municipios de Gran Canaria)
+geografia:
+  alta: ["Las Palmas de Gran Canaria", "Vega de San Mateo", "Santa Brígida", "Telde", "Valsequillo de Gran Canaria", "Teror"]
+  media: ["Arucas", "Firgas", "Santa María de Guía", "Gáldar", "Ingenio", "Agüimes", "Moya"]
+  baja: ["Valleseco", "Tejeda", "Artenara", "Agaete", "La Aldea de San Nicolás", "Mogán", "San Bartolomé de Tirajana", "Santa Lucía de Tirajana"]
+
+# Términos de búsqueda por categoría (se usan en los portales con buscador)
+categorias:
+  A:
+    nombre: "Comercio y ventas"
+    prioridad: alta
+    terminos: ["dependienta", "dependiente", "asesora comercial", "vendedora", "responsable de tienda", "encargada de tienda", "segunda encargada", "atención al cliente", "asesor de ventas", "store manager", "retail"]
+  B:
+    nombre: "Turismo y hostelería"
+    prioridad: alta
+    terminos: ["recepcionista", "agente de reservas", "agente de viajes", "asesora de viajes", "atención al visitante", "información turística", "reservas", "guest relations", "front office"]
+  C:
+    nombre: "Comercio internacional y administración"
+    prioridad: alta
+    terminos: ["comercio internacional", "administrativa comercial", "exportación", "importación", "gestión de pedidos", "administración de ventas", "back office", "auxiliar de logística", "atención al cliente internacional"]
+  D:
+    nombre: "Diseño, decoración y estética comercial"
+    prioridad: media-alta
+    terminos: ["visual merchandising", "escaparatista", "decoración", "asesora de decoración", "mobiliario", "interiorismo", "iluminación"]
+  E:
+    nombre: "Otras oportunidades"
+    prioridad: media
+    terminos: ["administrativa", "auxiliar administrativo", "recepción", "asistente de oficina", "gestora de clientes", "organización de eventos", "asistente de operaciones"]
+
+fuentes:
+  turijobs:
+    activa: true
+    paginas_max: 9
+  smartrecruiters:
+    activa: true
+    # Empresas con portal público SmartRecruiters (verificado: Primark y Kiabi tienen tiendas en GC).
+    # Añade más identificadores si descubres otras empresas que lo usen.
+    empresas: ["Primark", "Kiabi"]
+  adzuna:        # requiere ADZUNA_APP_ID y ADZUNA_APP_KEY (gratis)
+    activa: true
+  infojobs:      # requiere INFOJOBS_CLIENT_ID y INFOJOBS_CLIENT_SECRET (gratis)
+    activa: true
+  jooble:        # requiere JOOBLE_API_KEY (gratis)
+    activa: true
+
+# Empresas locales a vigilar (aparecen en el informe aunque no tengan ofertas hoy).
+# El agente añade automáticamente las que publican con frecuencia.
+empresas_a_seguir:
+  - {nombre: "Lopesan Hotel Group", web: "https://www.lopesan.com/es/trabaja-con-nosotros/"}
+  - {nombre: "Hoteles Santa Catalina / Barceló", web: "https://www.barcelo.com/es-es/trabaja-con-nosotros/"}
+  - {nombre: "Meliá (Paradisus Gran Canaria)", web: "https://careers.melia.com/"}
+  - {nombre: "IKEA Gran Canaria", web: "https://www.ikea.com/es/es/this-is-ikea/work-with-us/"}
+  - {nombre: "Leroy Merlin", web: "https://empleo.leroymerlin.es/"}
+  - {nombre: "El Corte Inglés", web: "https://www.elcorteingles.es/trabaja-con-nosotros/"}
+  - {nombre: "Primark (SmartRecruiters)", web: "https://careers.smartrecruiters.com/Primark"}
+  - {nombre: "Kiabi (SmartRecruiters)", web: "https://careers.smartrecruiters.com/Kiabi"}
+  - {nombre: "Binter", web: "https://www.bintercanarias.com/trabaja-con-nosotros"}
+  - {nombre: "Global / Salcai-Utinsa", web: "https://www.guaguasglobal.com/"}
+  - {nombre: "Viajes Insular", web: "https://www.viajesinsular.es/"}
