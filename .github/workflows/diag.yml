@@ -5,8 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for ua in "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" "JobAgentGC/1.0"; do
-            curl -s -o /tmp/o -m 60 -A "$ua" -w "%{http_code} %{time_total}s %{size_download}\n" https://www.turijobs.com/es/ofertas-trabajo/gran-canaria || echo fail
-          done
-          curl -s -o /dev/null -m 60 -w "home %{http_code} %{time_total}\n" https://www.turijobs.com/ || echo failhome
-          curl -sI -m 30 https://www.turijobs.com/es/ofertas-trabajo/gran-canaria | head -5
+          pip install -q requests
+          python - <<'P'
+          import requests,time
+          for i in range(3):
+              t=time.time()
+              try:
+                  r=requests.get("https://www.turijobs.com/es/ofertas-trabajo/gran-canaria"+("" if i==0 else f"?page={i+1}"),timeout=60,headers={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36","Accept-Language":"es-ES,es;q=0.9"})
+                  print("PY",r.status_code,round(time.time()-t,1),len(r.text))
+              except Exception as e: print("PY ERR",type(e).__name__,round(time.time()-t,1))
+              time.sleep(2)
+          P
