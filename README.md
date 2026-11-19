@@ -10,7 +10,8 @@ Funciona solo, en GitHub Actions + Vercel, sin abrir Claude ni tener el ordenado
 
 ```
 GitHub Actions (cron) ─► main.py run --scheduled
-   ├─ search/        Turijobs · SmartRecruiters (Primark, Kiabi…) · Adzuna* · InfoJobs* · Jooble*   (*con API key gratuita)
+   ├─ search/        Turijobs · EURES (SEPE / Servicio Canario de Empleo) · Infoempleo · SmartRecruiters (Primark, Kiabi…)
+   │                 · Adzuna* · InfoJobs* · Jooble*   (*con API key gratuita)
    ├─ filters/geo    municipio, tiempo en coche desde San Mateo, descarte de otras islas/península
    ├─ scoring/       categoría A–E + puntuación razonada (estudios 25, experiencia 20, ubicación 20,
    │                 condiciones 20, crecimiento 10, intereses 5) − penalizaciones
@@ -23,7 +24,9 @@ GitHub Actions (cron) ─► main.py run --scheduled
 - **Hora canaria real**: GitHub solo entiende UTC, así que el flujo se lanza a las 07:30 y 08:30 UTC y el programa
   solo ejecuta el que coincide con las 08:30 en Canarias (vale para invierno y verano; nunca duplica el informe).
   GitHub puede retrasar los cron unos minutos (a veces 10–20) en horas de mucha carga.
-- **Revisión de tarde (14:30 UTC)**: búsqueda que actualiza el panel y solo manda correo si aparece una oferta > 90.
+- **Revisiones de mediodía (~13:30) y tarde (~19:30)**: nueva búsqueda; manda un correo corto solo si han
+  aparecido ofertas interesantes nuevas. Cada horario tiene un disparador de respaldo (GitHub a veces omite
+  ejecuciones programadas) y el programa evita duplicados.
 - **Sin duplicados**: se identifica cada oferta por URL y por empresa+puesto+municipio (detecta la misma oferta en
   dos portales). Una oferta ya comunicada no vuelve a salir salvo que cambie (salario, contrato, jornada) o se republique.
 - **Caducadas**: si una oferta deja de aparecer 3 ejecuciones seguidas (solo cuenta si su portal respondió bien) o
@@ -34,26 +37,25 @@ GitHub Actions (cron) ─► main.py run --scheduled
 
 ## Puesta en marcha (una sola vez)
 
-### 1. Correo (Gmail)
-1. Activa la verificación en dos pasos de la cuenta de Gmail que enviará los correos.
-2. Crea una contraseña de aplicación en https://myaccount.google.com/apppasswords (16 letras).
+### 1. Correo
+Los correos se envían desde la función `site/api/notify.js` del panel en Vercel. GitHub Actions se identifica
+ante ella con su token OIDC firmado (solo se aceptan peticiones de este repositorio), así que **no hay ninguna
+contraseña guardada en GitHub**. Variables del proyecto en Vercel:
 
-### 2. Secretos en GitHub
-Repositorio → **Settings → Secrets and variables → Actions → New repository secret**:
-
-| Secreto | Valor |
+| Variable | Valor |
 |---|---|
-| `SMTP_HOST` | `smtp.gmail.com` |
-| `SMTP_PORT` | `587` |
-| `SMTP_USER` | el Gmail que envía |
-| `SMTP_PASSWORD` | la contraseña de aplicación |
-| `EMAIL_TO` | quién recibe el informe (varios separados por comas) |
-| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | opcional · alta gratis en developer.adzuna.com |
-| `INFOJOBS_CLIENT_ID`, `INFOJOBS_CLIENT_SECRET` | opcional · alta gratis en developer.infojobs.net |
-| `JOOBLE_API_KEY` | opcional · alta gratis en jooble.org/api/about |
+| `SMTP_HOST` / `SMTP_PORT` | `smtp.gmail.com` / `587` |
+| `SMTP_USER` | la cuenta de Gmail que envía |
+| `SMTP_PASSWORD` | su contraseña de aplicación (https://myaccount.google.com/apppasswords) |
+| `EMAIL_TO` | destinatarios, separados por comas |
+| `NOTIFY_REPO` | `gabrielgilbord/Job-agent` |
 
-Las fuentes opcionales amplían mucho la cobertura (InfoJobs es el portal más grande; Adzuna y Jooble agregan
-Indeed y portales de empresa). Sin ellas el agente funciona igual con Turijobs y SmartRecruiters.
+Para cambiar destinatarios: edita `EMAIL_TO` en Vercel → Settings → Environment Variables y pulsa *Redeploy*.
+
+### 2. Fuentes opcionales (secretos en GitHub)
+Settings → Secrets and variables → Actions: `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` (developer.adzuna.com),
+`INFOJOBS_CLIENT_ID`/`INFOJOBS_CLIENT_SECRET` (developer.infojobs.net), `JOOBLE_API_KEY` (jooble.org/api/about).
+Son gratuitas y amplían la cobertura (InfoJobs es el portal más grande; Adzuna y Jooble agregan Indeed).
 
 ### 3. Panel web (Vercel)
 El panel es la carpeta `site/`: una página estática que lee `data.json` (se regenera en cada búsqueda) y una
@@ -104,12 +106,13 @@ cercanía o fecha, marcar favoritas o descartadas, ver el historial de búsqueda
 
 ## Fuentes y normas de uso
 - **Turijobs**: listado público de Gran Canaria (permitido por su robots.txt), 1 consulta cada 2 s.
+- **EURES**: API pública del portal europeo de empleo; incluye las ofertas del SEPE/Empléate y del SCE.
+- **Infoempleo**: listado público de la provincia de Las Palmas (permitido por su robots.txt), 1 consulta cada 2 s.
 - **SmartRecruiters**: API pública de publicaciones de empresas (Primark y Kiabi tienen tiendas en GC; se pueden
   añadir más identificadores en `config.yaml`).
 - **InfoJobs / Adzuna / Jooble**: APIs oficiales con clave gratuita.
 - **No incluidas**: LinkedIn e Indeed no permiten el acceso automatizado en sus condiciones (Indeed llega en parte a
-  través de Adzuna/Jooble). El Servicio Canario de Empleo y Empléate no ofrecen un listado o API pública consultable;
-  las ofertas del SCE se publican también en portales agregados. Las webs de hoteles y comercios locales aparecen en
+  través de Adzuna/Jooble). Jobtoday y Hosco cargan sus ofertas con aplicaciones privadas sin listado público consultable. Las webs de hoteles y comercios locales aparecen en
   «Empresas que merece la pena seguir» con su enlace.
 - No se usan CAPTCHAs, inicios de sesión ni datos privados.
 

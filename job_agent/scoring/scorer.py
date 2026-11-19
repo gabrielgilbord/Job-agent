@@ -35,8 +35,10 @@ SUSPICIOUS = ["multinivel", "ingresos ilimitados", "se tu propio jefe", "solo a 
               "100 a comision", "inversion inicial", "trabaja desde casa y gana", "venta piramidal", "freelance a comision",
               "sin sueldo fijo", "remuneracion a comision"]
 SHORT_CONTRACT_TITLE = ["campana de navidad", "campana navidad", "navidad", "campana de verano", "campana", "rebajas",
-                        "fin de semana", "fines de semana", "por horas", "extra", "eventual", "verano", "refuerzo"]
-SHORT_CONTRACT_DESC = ["campana de navidad", "campana navidad", "campana de verano", "contrato de 1 mes", "contrato de un mes",
+                        "fin de semana", "fines de semana", "por horas", "extra", "eventual", "verano", "refuerzo", "cubrir baja",
+                        "sustitucion", "baja"]
+SHORT_CONTRACT_DESC = ["cubrir baja", "cubrir una baja", "baja por maternidad", "baja maternal", "sustitucion de vacaciones",
+                       "campana de navidad", "campana navidad", "campana de verano", "contrato de 1 mes", "contrato de un mes",
                        "contrato de 2 meses", "contrato de dos meses", "duracion 1 mes", "duracion de 1 mes",
                        "duracion 2 meses", "duracion de 2 meses", "contrato de 15 dias", "contrato por dias"]
 VALUED = ["valorable", "se valora", "se valorara", "deseable", "plus", "nice to have", "preferible", "valoraremos",
@@ -224,6 +226,9 @@ def score_offer(o: Offer, settings) -> Offer:
         co += 2
     elif "practicas" in c:
         co -= 3
+    elif "autonomo" in c:
+        co -= 8
+        warns.append("Contrato como autónomo (sin nómina fija)")
     elif c:
         co -= 2
     if (has_any(norm(o.title + " " + o.contract + " " + o.workday), SHORT_CONTRACT_TITLE)
@@ -317,19 +322,27 @@ def score_offer(o: Offer, settings) -> Offer:
             pen += 4
             warns.append(f"Exigen manejo de {sw[0]} (formación específica a confirmar)")
             break
+    if "seguros" in tn and has_any(tn, ["comercial", "agente", "asesor", "asesora", "mando"]):
+        pen += 6
+        warns.append("Venta de seguros: suele ir ligada a comisiones")
     if has_any(ft, SUSPICIOUS):
         pen += 20
         warns.append("⚠️ Anuncio sospechoso (solo comisiones / multinivel)")
     if not o.company.strip() and len(o.description) < 200:
         pen += 6
         warns.append("Oferta poco transparente (sin empresa ni detalle)")
-    if "practicas" in tn or "becario" in tn or "internship" in tn or "alumno" in tn:
+    if has_any(tn, ["practicas", "becario", "becaria", "internship", "alumno", "alumna", "stage", "trainee"]):
         if has_any(ft, ["no remunerada", "no remuneradas", "sin remuneracion"]) and not pref.get(
                 "aceptar_practicas_no_remuneradas", False):
             o.score, o.verdict, o.category = 0, "prácticas no remuneradas", ""
             return o
-        pen += 10
-        warns.append("Son prácticas: suelen exigir estar matriculada")
+        if has_any(ft, ["estudiantes", "students", "studenti", "matriculado", "matriculada", "convenio de practicas",
+                        "convenio con universidad", "enrolled"]):
+            pen += 20
+            warns.append("Prácticas solo para estudiantes matriculados")
+        else:
+            pen += 10
+            warns.append("Son prácticas: suelen exigir estar matriculada")
 
     total = _clamp(st + ex + loc + co + gr + it - pen, 0, 100)
     o.score = int(round(total))
@@ -372,5 +385,11 @@ def enrich_location(o: Offer, settings) -> str:
         o.remote = True
         return "remoto"
     if state == "generico":
+        mun2 = geo.municipality_from_text(o.description[:1500])
+        if mun2:
+            o.municipality = mun2
+            o.travel_min = geo.travel_minutes(mun2)
+            o.geo_tier = geo.tier_of(mun2, settings.geografia)
+            return "ok"
         o.geo_tier = "media"
     return state

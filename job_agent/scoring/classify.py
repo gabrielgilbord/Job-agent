@@ -49,7 +49,7 @@ EXCLUDE_TITLE = [
     "director de hotel", "director general", "arquitecto", "arquitecta", "delineante", "disenador grafico",
     "disenadora grafica", "comercial autonomo", "agente inmobiliario", "asesor inmobiliario", "asesor financiero",
     "agente de seguros", "puerta fria", "captador", "captadora", "fundraiser", "rrhh", "recursos humanos", "human resources",
-    "it support", "soporte tecnico", "tecnico de sistemas", "electromecanico", "soldador", "cristalero", "carpintero",
+    "it support", "soporte tecnico", "instalador", "instaladora", "tecnico", "tecnica", "auxiliar de sonido", "auxiliar de video", "tecnico de sistemas", "electromecanico", "soldador", "cristalero", "carpintero",
 ]
 KEEP_OVERRIDES = ["night auditor", "recepcionista", "visual merchandiser"]
 

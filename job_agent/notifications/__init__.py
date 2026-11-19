@@ -4,13 +4,18 @@ from __future__ import annotations
 import logging
 
 from .email import EmailNotifier
+from .relay import RelayNotifier
 
 log = logging.getLogger("job_agent.notify")
 
 
 def notifiers(settings) -> list:
+    """SMTP directo si hay credenciales (uso local); si no, en GitHub Actions se envía a través del panel."""
     n = EmailNotifier(settings)
-    return [n] if n.configured else []
+    if n.configured:
+        return [n]
+    r = RelayNotifier(settings)
+    return [r] if r.configured else []
 
 
 def send_report(settings, subject: str, html: str, text: str, html_path) -> list[str]:

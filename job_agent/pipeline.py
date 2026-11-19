@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import logging.handlers
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from . import notifications
 from .config import Settings
@@ -61,6 +61,17 @@ def should_run_scheduled(settings: Settings, db: Database, now: datetime | None 
     return True, ""
 
 
+def should_run_update(db: Database, now_utc: datetime | None = None, min_gap_min: int = 150) -> tuple[bool, str]:
+    """Revisiones intradía: hay disparadores de respaldo, así que se omite si hubo una búsqueda hace poco."""
+    last = db.last_run()
+    if last and last["finished_at"]:
+        fin = datetime.fromisoformat(last["finished_at"])
+        now_utc = now_utc or datetime.now(timezone.utc)
+        if now_utc - fin < timedelta(minutes=min_gap_min):
+            return False, f"ya se buscó a las {fin:%H:%M} UTC"
+    return True, ""
+
+
 def collect(settings: Settings, db: Database, run_id: int, res: RunResult, sources=None):
     offers = []
     ok_sources = []
@@ -101,9 +112,9 @@ def process(settings: Settings, offers) -> list:
         score_offer(o, settings)
         if not o.category or o.score <= 0:
             continue
-        if o.travel_min is not None and o.travel_min > max_min and o.score < 80:
-            continue  # lejos y no excepcional
-        if o.geo_tier == "baja" and o.score < 75:
+        if o.travel_min is not None and o.travel_min > max_min and o.score < 70:
+            continue  # lejos y no especialmente buena
+        if o.geo_tier == "baja" and o.score < 65:
             continue
         key = o.fingerprint if o.company else o.url
         prev = kept.get(key)
@@ -120,8 +131,9 @@ def run(settings: Settings, mode: str = "daily", notify: bool = True, scheduled:
     db = Database(settings.db_path)
     res = RunResult()
     try:
-        if scheduled and mode == "daily":
-            go, why = should_run_scheduled(settings, db, now)
+        if scheduled:
+            go, why = (should_run_scheduled(settings, db, now) if mode == "daily"
+                       else should_run_update(db, now.astimezone(timezone.utc)))
             if not go:
                 res.skipped_reason = why
                 log.info("Ejecución programada omitida: %s", why)
@@ -145,18 +157,23 @@ def run(settings: Settings, mode: str = "daily", notify: bool = True, scheduled:
         db.conn.commit()
         res.closed = db.mark_missing(ok_sources, seen_urls, int(settings.busqueda.get("dias_sin_ver_para_cerrar", 3)))
 
-        # Alerta inmediata (> umbral)
-        thr = int(settings.busqueda.get("puntuacion_alerta_inmediata", 90))
-        alerts = db.pending_alerts(thr)
-        if alerts and notify:
-            html_a, text_a = render_alert(alerts, panel_url)
-            errs = notifications.send_alert(settings, f"🔥 Oferta de empleo excelente: {alerts[0]['title']}", html_a, text_a)
-            res.errors.extend(errs)
-            if not errs:
-                db.mark_alerted([a["id"] for a in alerts])
+        min_score = int(settings.busqueda.get("puntuacion_minima_informe", 60))
+        if mode == "update":
+            # Revisión intradía: correo solo si han aparecido ofertas interesantes desde el último aviso
+            fresh = [r for r in db.to_report(min_score) if r["alerted_at"] is None]
+            if fresh and notify:
+                n = len(fresh)
+                html_a, text_a = render_alert(
+                    fresh, panel_url, heading=f"🆕 {n} oferta{'s' if n > 1 else ''} nueva{'s' if n > 1 else ''} interesante{'s' if n > 1 else ''}",
+                    sub=f"Revisión de las {now:%H:%M}. Mejor puntuación: {fresh[0]['score']}/100.")
+                subject = f"🆕 Empleo GC: {n} nueva{'s' if n > 1 else ''} — {fresh[0]['title'][:60]}"
+                errs = notifications.send_report(settings, subject, html_a, text_a, None)
+                res.errors.extend(errs)
+                if not errs:
+                    db.mark_alerted([r["id"] for r in fresh])
+                    db.mark_reported([r["id"] for r in fresh])
 
         if mode == "daily":
-            min_score = int(settings.busqueda.get("puntuacion_minima_informe", 60))
             pending = db.to_report(min_score)
             data = ReportData(
                 date=now, pending=pending, new_total=db.count_new_since_last_report(),

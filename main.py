@@ -5,7 +5,8 @@ Uso:
   python main.py run                 # búsqueda + informe + notificación (ahora mismo)
   python main.py run --scheduled     # igual, pero solo si toca (08:30 Canarias, una vez al día)
   python main.py run --no-notify     # genera el informe sin enviarlo
-  python main.py alerts              # búsqueda sin informe: actualiza el panel y avisa de ofertas > 90
+  python main.py update              # revisión intradía: correo solo si hay ofertas nuevas interesantes
+  python main.py alerts              # búsqueda sin correo: solo actualiza el panel
   python main.py test-notify         # envía un correo de prueba
   python main.py reset-history       # borra todo el historial (pide confirmación)
 """
@@ -23,6 +24,8 @@ def main(argv=None):
     r.add_argument("--scheduled", action="store_true")
     r.add_argument("--no-notify", action="store_true")
     sub.add_parser("alerts")
+    u = sub.add_parser("update")
+    u.add_argument("--scheduled", action="store_true")
     sub.add_parser("test-notify")
     rh = sub.add_parser("reset-history")
     rh.add_argument("--yes", action="store_true")
@@ -38,9 +41,12 @@ def main(argv=None):
                   f"informe: {res.report_path}")
             for e in res.errors:
                 print("  ! ", e)
-    elif a.cmd == "alerts":
-        res = run(s, "alerts")
-        print(f"Alertas: {res.events}")
+    elif a.cmd == "alerts":   # búsqueda sin correo (botón "Buscar ahora" del panel)
+        res = run(s, "manual", notify=False)
+        print(f"Búsqueda: {res.events}")
+    elif a.cmd == "update":   # revisión intradía: correo solo si hay ofertas nuevas interesantes
+        res = run(s, "update", scheduled=a.scheduled)
+        print("Omitido:", res.skipped_reason) if res.skipped_reason else print(f"Revisión: {res.events}", *res.errors)
     elif a.cmd == "test-notify":
         from job_agent import notifications
         chans = notifications.notifiers(s)

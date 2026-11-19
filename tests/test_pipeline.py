@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 from job_agent import notifications
 from job_agent.database import Database
-from job_agent.pipeline import run, should_run_scheduled
+from job_agent.pipeline import run, should_run_scheduled, should_run_update
 from job_agent.search.base import Source, SourceUnavailable
 from conftest import make_offer
 
@@ -101,7 +101,7 @@ def test_panel_web_datos_y_marcas(settings):
     assert "Comercio Internacional" not in json.dumps(data, ensure_ascii=False)  # no publica el perfil de la candidata
     oid = data["offers"][0]["id"]
     (settings.site_dir / "flags.json").write_text(json.dumps({"favorite": [oid], "discarded": []}))
-    run(settings, mode="alerts", notify=False, sources=[FakeOK], now=datetime(2026, 11, 18, 12, 0, tzinfo=TZ))
+    run(settings, mode="manual", notify=False, sources=[FakeOK], now=datetime(2026, 11, 18, 12, 0, tzinfo=TZ))
     data = json.loads((settings.site_dir / "data.json").read_text(encoding="utf-8"))
     db = Database(settings.db_path)
     assert db.query("favorite=1")[0]["id"] == oid
@@ -112,3 +112,31 @@ def test_vista_previa_no_cuenta_como_informe(settings):
     db = Database(settings.db_path)
     assert not db.daily_report_done("2026-11-18")
     assert db.to_report(0)   # siguen pendientes para el correo real
+
+
+def test_revision_intradia_solo_avisa_de_novedades(settings, monkeypatch):
+    sent = []
+
+    class Chan:
+        name, configured = "fake", True
+
+        def send_report(self, subject, html, text, path):
+            sent.append(subject)
+
+    monkeypatch.setattr(notifications, "notifiers", lambda s: [Chan()])
+    run(settings, mode="update", sources=[FakeOK], now=datetime(2026, 11, 18, 13, 30, tzinfo=TZ))
+    assert len(sent) == 1 and "nueva" in sent[0]
+    run(settings, mode="update", sources=[FakeOK], now=datetime(2026, 11, 18, 19, 30, tzinfo=TZ))
+    assert len(sent) == 1          # nada nuevo => sin correo
+    db = Database(settings.db_path)
+    assert should_run_update(db)[0] is False   # disparador de respaldo justo después => se omite
+
+
+def test_relay_requiere_entorno_de_github(settings, monkeypatch):
+    from job_agent.notifications.relay import RelayNotifier
+    settings.raw["busqueda"]["panel_url"] = "https://panel.example"
+    monkeypatch.delenv("ACTIONS_ID_TOKEN_REQUEST_URL", raising=False)
+    assert not RelayNotifier(settings).configured
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "https://x?a=1")
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "t")
+    assert RelayNotifier(settings).configured and notifications.notifiers(settings)[0].name.startswith("email")

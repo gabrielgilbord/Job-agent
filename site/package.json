@@ -1,0 +1,6 @@
+{
+  "name": "empleo-gran-canaria-panel",
+  "private": true,
+  "engines": { "node": "22.x" },
+  "dependencies": { "nodemailer": "^6.9.16" }
+}

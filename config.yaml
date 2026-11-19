@@ -77,6 +77,12 @@ fuentes:
     # Empresas con portal público SmartRecruiters (verificado: Primark y Kiabi tienen tiendas en GC).
     # Añade más identificadores si descubres otras empresas que lo usen.
     empresas: ["Primark", "Kiabi"]
+  eures:         # portal europeo: incluye ofertas del SEPE/Empléate y del Servicio Canario de Empleo
+    activa: true
+    paginas_max: 25
+  infoempleo:
+    activa: true
+    paginas_max: 8
   adzuna:        # requiere ADZUNA_APP_ID y ADZUNA_APP_KEY (gratis)
     activa: true
   infojobs:      # requiere INFOJOBS_CLIENT_ID y INFOJOBS_CLIENT_SECRET (gratis)

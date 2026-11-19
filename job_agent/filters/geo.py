@@ -163,3 +163,20 @@ def tier_of(municipality: str, geografia: dict) -> str:
 
 def travel_minutes(municipality: str) -> int | None:
     return TRAVEL_MIN.get(municipality)
+
+
+def municipality_from_text(text: str) -> str:
+    """Busca un municipio de GC en un texto libre (descripción). Solo alias inequívocos (> 5 letras)."""
+    t = norm(text)
+    if not t or any(_contains(t, k) for k in ("tenerife", "lanzarote", "fuerteventura")):
+        return ""
+    for place, mun in KNOWN_PLACES.items():
+        if _contains(t, place):
+            return mun
+    pairs = sorted(((a, m) for m, al in ALIASES.items() for a in al if len(a) > 5 and a not in
+                    ("san mateo", "el mirador", "las arenas", "la aldea", "carrizal", "triana", "tafira", "doctoral")),
+                   key=lambda x: -len(x[0]))
+    for alias, mun in pairs:
+        if _contains(t, norm(alias)):
+            return mun
+    return ""

@@ -241,8 +241,9 @@ def render_text(d: ReportData, panel_url: str = "") -> str:
     return "\n".join(lines)
 
 
-def render_alert(rows, panel_url: str = "") -> tuple[str, str]:
-    """(html, texto) del aviso inmediato de ofertas excelentes."""
+def render_alert(rows, panel_url: str = "", heading: str = "🔥 Oferta excelente detectada",
+                 sub: str = "No esperes al informe de mañana.") -> tuple[str, str]:
+    """(html, texto) de un aviso con una lista de ofertas."""
     rows = [dict(r) for r in rows]
     for r in rows:
         for k in ("reasons", "warnings"):
@@ -252,7 +253,7 @@ def render_alert(rows, panel_url: str = "") -> tuple[str, str]:
                 except ValueError:
                     r[k] = []
     html = (f'<!doctype html><html><head><meta charset="utf-8"><style>{CSS}</style></head><body><div class="wrap">'
-            f'<div class="hero"><h1>🔥 Oferta excelente detectada</h1><p>No esperes al informe de mañana.</p></div>'
+            f'<div class="hero"><h1>{escape(heading)}</h1><p>{escape(sub)}</p></div>'
             + "".join(card(r) for r in rows)
             + (f'<p><a href="{escape(panel_url)}">Abrir el panel</a></p>' if panel_url else "") + "</div></body></html>")
     text = "\n\n".join(f"{r['title']} — {r.get('company') or ''} ({r['score']}/100)\n{_place(r)}\n{r['url']}" for r in rows)
