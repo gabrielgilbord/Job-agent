@@ -110,3 +110,4 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='www.turijobs.com'
 2026-11-19 13:01:11,985 INFO job_agent: jooble omitida (falta JOOBLE_API_KEY)
 2026-11-19 13:01:17,341 INFO job_agent.notify: Informe enviado por email (vía panel)
 2026-11-19 13:01:17,357 INFO job_agent: Fin: 409 encontradas, 60 relevantes, eventos={'new': 51, 'seen': 9, 'modified': 0, 'republished': 0, 'duplicate': 0}, cerradas=0, errores=0
+2026-11-19 16:40:51,977 INFO job_agent: Ejecución programada omitida: el informe de hoy ya se envió
