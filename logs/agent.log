@@ -101,3 +101,12 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='www.turijobs.com'
 2026-11-18 22:16:15,941 INFO job_agent: infojobs omitida (faltan INFOJOBS_CLIENT_ID / INFOJOBS_CLIENT_SECRET)
 2026-11-18 22:16:15,942 INFO job_agent: jooble omitida (falta JOOBLE_API_KEY)
 2026-11-18 22:16:16,676 INFO job_agent: Fin: 78 encontradas, 11 relevantes, eventos={'new': 1, 'seen': 10, 'modified': 0, 'republished': 0, 'duplicate': 0}, cerradas=0, errores=0
+2026-11-19 12:59:56,686 INFO job_agent: turijobs → 55 ofertas
+2026-11-19 13:00:17,048 INFO job_agent: smartrecruiters → 12 ofertas
+2026-11-19 13:00:55,832 INFO job_agent: eures → 265 ofertas
+2026-11-19 13:01:11,979 INFO job_agent: infoempleo → 77 ofertas
+2026-11-19 13:01:11,982 INFO job_agent: adzuna omitida (faltan ADZUNA_APP_ID / ADZUNA_APP_KEY)
+2026-11-19 13:01:11,984 INFO job_agent: infojobs omitida (faltan INFOJOBS_CLIENT_ID / INFOJOBS_CLIENT_SECRET)
+2026-11-19 13:01:11,985 INFO job_agent: jooble omitida (falta JOOBLE_API_KEY)
+2026-11-19 13:01:17,341 INFO job_agent.notify: Informe enviado por email (vía panel)
+2026-11-19 13:01:17,357 INFO job_agent: Fin: 409 encontradas, 60 relevantes, eventos={'new': 51, 'seen': 9, 'modified': 0, 'republished': 0, 'duplicate': 0}, cerradas=0, errores=0
