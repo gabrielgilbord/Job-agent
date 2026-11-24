@@ -252,3 +252,4 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='www.turijobs.com'
 2026-11-24 04:23:44,107 INFO job_agent: infojobs omitida (faltan INFOJOBS_CLIENT_ID / INFOJOBS_CLIENT_SECRET)
 2026-11-24 04:23:44,108 INFO job_agent: jooble omitida (falta JOOBLE_API_KEY)
 2026-11-24 04:23:48,899 INFO job_agent: Fin: 420 encontradas, 63 relevantes, eventos={'new': 0, 'seen': 63, 'modified': 0, 'republished': 0, 'duplicate': 0}, cerradas=0, errores=0
+2026-11-24 04:49:32,133 INFO job_agent: Ejecución programada omitida: ya se buscó a las 04:23 UTC
