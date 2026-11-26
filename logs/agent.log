@@ -324,3 +324,4 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='www.turijobs.com'
 2026-11-26 17:50:57,653 INFO job_agent.notify: Informe enviado por email (vía panel)
 2026-11-26 17:50:57,659 INFO job_agent: Fin: 420 encontradas, 62 relevantes, eventos={'new': 1, 'seen': 56, 'modified': 5, 'republished': 0, 'duplicate': 0}, cerradas=0, errores=0
 2026-11-26 18:35:34,326 INFO job_agent: Ejecución programada omitida: el informe de hoy ya se envió
+2026-11-26 18:57:58,662 INFO job_agent: Ejecución programada omitida: el informe de hoy ya se envió
