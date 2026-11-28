@@ -375,3 +375,76 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='www.turijobs.com'
 2026-11-28 02:05:51,681 INFO job_agent: jooble omitida (falta JOOBLE_API_KEY)
 2026-11-28 02:05:53,992 INFO job_agent: Fin: 422 encontradas, 57 relevantes, eventos={'new': 0, 'seen': 53, 'modified': 0, 'republished': 4, 'duplicate': 0}, cerradas=2, errores=0
 2026-11-28 02:44:20,155 INFO job_agent: Ejecución programada omitida: ya se buscó a las 02:05 UTC
+2026-11-28 16:18:04,754 ERROR job_agent: Fallo en la fuente turijobs
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpcore/_sync/http2.py", line 187, in handle_request
+    raise exc
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpcore/_sync/http2.py", line 150, in handle_request
+    status, headers = self._receive_response(
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpcore/_sync/http2.py", line 294, in _receive_response
+    event = self._receive_stream_event(request, stream_id)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpcore/_sync/http2.py", line 339, in _receive_stream_event
+    raise RemoteProtocolError(event)
+httpcore.RemoteProtocolError: <StreamReset stream_id:1, error_code:2, remote_reset:True>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/Job-agent/Job-agent/job_agent/pipeline.py", line 84, in collect
+    got = src.fetch()
+          ^^^^^^^^^^^
+  File "/home/runner/work/Job-agent/Job-agent/job_agent/search/turijobs.py", line 57, in fetch
+    data = self._page(n)
+           ^^^^^^^^^^^^^
+  File "/home/runner/work/Job-agent/Job-agent/job_agent/search/turijobs.py", line 37, in _page
+    r = self.client.get(url)
+        ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_client.py", line 1053, in get
+    return self.request(
+           ^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: <StreamReset stream_id:1, error_code:2, remote_reset:True>
+2026-11-28 16:18:16,673 INFO job_agent: smartrecruiters → 8 ofertas
+2026-11-28 16:18:50,250 INFO job_agent: eures → 267 ofertas
+2026-11-28 16:19:03,000 INFO job_agent: infoempleo → 76 ofertas
+2026-11-28 16:19:03,002 INFO job_agent: adzuna omitida (faltan ADZUNA_APP_ID / ADZUNA_APP_KEY)
+2026-11-28 16:19:03,003 INFO job_agent: infojobs omitida (faltan INFOJOBS_CLIENT_ID / INFOJOBS_CLIENT_SECRET)
+2026-11-28 16:19:03,004 INFO job_agent: jooble omitida (falta JOOBLE_API_KEY)
+2026-11-28 16:19:08,147 INFO job_agent.notify: Informe enviado por email (vía panel)
+2026-11-28 16:19:08,152 INFO job_agent: Fin: 351 encontradas, 50 relevantes, eventos={'new': 0, 'seen': 50, 'modified': 0, 'republished': 0, 'duplicate': 0}, cerradas=2, errores=1
